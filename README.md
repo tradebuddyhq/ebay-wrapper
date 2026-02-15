@@ -55,14 +55,10 @@ npm install
 npm run build
 ```
 
-## Roadmap (suggested)
+## To do
 
 - Rate limit handling + retry/backoff
 - More Browse endpoints: getItemByLegacyId, getItems, getItemAccessors
 - Buy → Feed
 - Sell → Inventory
 - Commerce → Taxonomy
-
-## License
-
-MIT
