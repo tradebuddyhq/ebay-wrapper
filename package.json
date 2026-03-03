@@ -1,0 +1,35 @@
+{
+  "name": "@tradebuddyhq/ebay-wrapper",
+  "version": "1.0.1",
+  "description": "TypeScript eBay REST API wrapper (OAuth + Buy Browse implemented)",
+  "license": "MIT",
+  "repository": "https://github.com/tradebuddyhq/ebay-wrapper",
+  "type": "module",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "import": "./lib/index.js"
+    }
+  },
+  "files": [
+    "lib",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rimraf lib"
+  },
+  "devDependencies": {
+    "@sapphire/prettier-config": "^1.4.4",
+    "@types/node": "^25.2.3",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.5.4"
+  },
+  "prettier": "@sapphire/prettier-config"
+}
