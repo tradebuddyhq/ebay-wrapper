@@ -1,66 +1,75 @@
-import { getBaseUrls, requestJson } from "../http.js";
-import type { BrowseSearchParams, ClientOptions, ItemSummary } from "../types.js";
-import { OAuthClient } from "../oauth.js";
+import { BaseAPI } from "../base-api.js";
+import type {
+  BrowseSearchParams,
+  CompatibilityPayload,
+  CompatibilityResponse,
+  ItemDetail,
+  ItemGroupResponse,
+  SearchResponse,
+} from "../types.js";
 
-export class BrowseAPI {
-  private opts: ClientOptions;
-  private oauth: OAuthClient;
+/**
+ * eBay Buy Browse API — search, view, and check compatibility of items.
+ * @see https://developer.ebay.com/api-docs/buy/browse/overview.html
+ */
+export class BrowseAPI extends BaseAPI {
+  private static readonly BASE = "/buy/browse/v1";
 
-  constructor(opts: ClientOptions) {
-    this.opts = opts;
-    this.oauth = new OAuthClient(opts);
+  /** Search for items. */
+  async search(params: BrowseSearchParams): Promise<SearchResponse> {
+    return this.get<SearchResponse>(
+      `${this.ctx.baseUrl}${BrowseAPI.BASE}/item_summary/search`,
+      params as Record<string, string | number | undefined>,
+    );
   }
 
-  private async headers() {
-    const token = await this.oauth.getAppAccessToken();
-    const headers: Record<string, string> = {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    };
-
-    if (this.opts.marketplaceId) headers["X-EBAY-C-MARKETPLACE-ID"] = this.opts.marketplaceId;
-    if (this.opts.acceptLanguage) headers["Accept-Language"] = this.opts.acceptLanguage;
-    if (this.opts.userAgent) headers["User-Agent"] = this.opts.userAgent;
-
-    return headers;
+  /** Get a single item by its eBay item ID. */
+  async getItem(itemId: string, fieldgroups?: string): Promise<ItemDetail> {
+    const path = `${BrowseAPI.BASE}/item/${encodeURIComponent(itemId)}`;
+    return this.get<ItemDetail>(
+      `${this.ctx.baseUrl}${path}`,
+      fieldgroups ? { fieldgroups } : undefined,
+    );
   }
 
-  /**
-   * Search items using Buy Browse API.
-   * Docs: https://developer.ebay.com/api-docs/buy/browse/resources/item_summary/methods/search
-   */
-  async search(params: BrowseSearchParams) {
-    const env = this.opts.env ?? "production";
-    const { api } = getBaseUrls(env);
-
-    const url = new URL(api + "/buy/browse/v1/item_summary/search");
-    for (const [k, v] of Object.entries(params)) {
-      if (v === undefined || v === null) continue;
-      url.searchParams.set(k, String(v));
-    }
-
-    return requestJson<{ itemSummaries?: ItemSummary[]; total?: number; href?: string }>({
-      url: url.toString(),
-      method: "GET",
-      headers: await this.headers(),
-      timeoutMs: this.opts.timeoutMs ?? 15000,
-    });
+  /** Get a single item using its legacy (v1) item ID. */
+  async getItemByLegacyId(
+    legacyItemId: string,
+    options?: { legacy_variation_id?: string; legacy_variation_sku?: string; fieldgroups?: string },
+  ): Promise<ItemDetail> {
+    return this.get<ItemDetail>(
+      `${this.ctx.baseUrl}${BrowseAPI.BASE}/item/get_item_by_legacy_id`,
+      { legacy_item_id: legacyItemId, ...options } as Record<string, string | undefined>,
+    );
   }
 
-  /**
-   * Get a single item by itemId.
-   * Docs: https://developer.ebay.com/api-docs/buy/browse/resources/item/methods/getItem
-   */
-  async getItem(itemId: string) {
-    const env = this.opts.env ?? "production";
-    const { api } = getBaseUrls(env);
+  /** Get multiple items by their item IDs (max 20). */
+  async getItems(itemIds: string[], fieldgroups?: string): Promise<{ items?: ItemDetail[]; warnings?: Array<{ errorId: number; domain: string; category: string; message: string }> }> {
+    return this.get<{ items?: ItemDetail[]; warnings?: Array<{ errorId: number; domain: string; category: string; message: string }> }>(
+      `${this.ctx.baseUrl}${BrowseAPI.BASE}/item/`,
+      {
+        item_ids: itemIds.join(","),
+        ...(fieldgroups ? { fieldgroups } : {}),
+      },
+    );
+  }
 
-    const url = api + `/buy/browse/v1/item/${encodeURIComponent(itemId)}`;
-    return requestJson<any>({
-      url,
-      method: "GET",
-      headers: await this.headers(),
-      timeoutMs: this.opts.timeoutMs ?? 15000,
-    });
+  /** Get items in a group (variations). */
+  async getItemsByItemGroup(itemGroupId: string, fieldgroups?: string): Promise<ItemGroupResponse> {
+    return this.get<ItemGroupResponse>(
+      `${this.ctx.baseUrl}${BrowseAPI.BASE}/item/get_items_by_item_group`,
+      {
+        item_group_id: itemGroupId,
+        ...(fieldgroups ? { fieldgroups } : {}),
+      },
+    );
+  }
+
+  /** Check if an item is compatible with a given set of properties. */
+  async checkCompatibility(itemId: string, payload: CompatibilityPayload): Promise<CompatibilityResponse> {
+    return this.post<CompatibilityResponse>(
+      `${BrowseAPI.BASE}/item/${encodeURIComponent(itemId)}/check_compatibility`,
+      payload,
+    );
   }
 }
