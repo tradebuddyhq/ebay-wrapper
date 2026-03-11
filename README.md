@@ -1,6 +1,6 @@
 # ebay API Wrapper
 
-A comprehensive, fully-typed TypeScript wrapper for the eBay REST APIs. (zero runtime dependencies, uses native `fetch`.
+A comprehensive, fully-typed TypeScript wrapper for the eBay REST APIs w/ 0 runtime dependencies (uses `fetch`)
 
 ## Features
 
